@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大師級麵團全功能計算機 v10</title>
+    <style>
+        :root { --primary: #2b1d1a; --accent: #d84315; --bg: #f8f9fa; --card: #ffffff; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: #333; display: flex; justify-content: center; padding: 10px; }
+        .container { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 650px; width: 100%; }
+        h2 { text-align: center; color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin: 0 0 15px 0; font-size: 1.4rem; }
+        
+        /* 區塊樣式 */
+        .section { margin-bottom: 15px; padding: 12px; border: 1px solid #eee; border-radius: 8px; background: #fff; }
+        .section-title { font-size: 0.85rem; font-weight: bold; color: var(--accent); margin-bottom: 10px; border-left: 4px solid var(--accent); padding-left: 8px; text-transform: uppercase; }
+        
+        .flex-row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+        .input-item { flex: 1; min-width: 100px; margin-bottom: 8px; }
+        label { display: block; font-size: 0.75rem; font-weight: bold; margin-bottom: 3px; color: #666; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
+
+        /* 模式切換 */
+        .method-toggle { display: flex; background: #eee; border-radius: 6px; padding: 3px; margin-bottom: 10px; }
+        .method-toggle label { flex: 1; text-align: center; cursor: pointer; padding: 6px; margin: 0; font-size: 0.85rem; }
+        .method-toggle input { display: none; }
+        .method-toggle input:checked + span { background: var(--primary); color: white; display: block; border-radius: 4px; padding: 6px; }
+
+        /* 狀態卡片 */
+        .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 15px; }
+        .status-card { background: #fdf5e6; padding: 8px; border-radius: 6px; text-align: center; border: 1px solid #f3e5f5; }
+        .status-label { font-size: 0.65rem; color: #795548; }
+        .status-value { font-weight: bold; font-size: 0.85rem; color: var(--primary); }
+
+        /* 結果顯示 */
+        .result-box { background: #fff3e0; padding: 15px; border-radius: 8px; border: 2px solid #ffe0b2; }
+        .result-item { display: flex; justify-content: space-between; margin-bottom: 6px; align-items: center; }
+        .highlight { color: var(--accent); font-weight: 800; font-size: 1.4rem; }
+        .warn { color: #d32f2f; font-size: 0.7rem; background: #ffebee; padding: 5px; border-radius: 4px; display: none; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>麵團全功能計算機 v10</h2>
+
+    <div class="section" style="background: #fdfaf6;">
+        <div class="section-title">情境快選</div>
+        <select id="preset" onchange="applyPreset()">
+            <option value="custom">-- 自定義模式 --</option>
+            <option value="baguette">法棍 (Poolish 種 / 72% 水 / 高溫)</option>
+            <option value="sourdough">酸種歐包 (Levain 種 / 80% 水 / 有蓋)</option>
+            <option value="old_dough_toast">老麵吐司 (Old Dough / 68% 水 / 奶油蛋奶)</option>
+            <option value="brioche">布里歐 (高油脂 / 全蛋奶)</option>
+            <option value="mantou">老麵饅頭 (低含水 / 蒸)</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <div class="section-title">生產目標</div>
+        <div class="flex-row">
+            <div class="input-item" style="flex:2;"><label>單個成品重 (g)</label><input type="number" id="unitWeight" value="250" oninput="calculate()"></div>
+            <div class="input-item"><label>數量</label><input type="number" id="qty" value="2" oninput="calculate()"></div>
+            <div class="input-item"><label>氣溫 (°C)</label><input type="number" id="envTemp" value="26" oninput="calculate()"></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">烘焙方式</div>
+        <div class="method-toggle">
+            <label><input type="radio" name="method" id="modeBake" value="bake" checked onclick="toggleMethod()"><span>烤 (Bake)</span></label>
+            <label><input type="radio" name="method" id="modeSteam" value="steam" onclick="toggleMethod()"><span>蒸 (Steam)</span></label>
+        </div>
+        <div id="bakePanel" class="flex-row">
+            <div class="input-item"><label>溫度 (°C)</label><input type="number" id="temp" value="230" oninput="calculate()"></div>
+            <div class="input-item"><label>時間 (min)</label><input type="number" id="time" value="25" oninput="calculate()"></div>
+            <div class="input-item" style="flex:0.5; text-align:center;"><label>有蓋</label><input type="checkbox" id="lidded" onchange="calculate()" style="width:18px; height:18px;"></div>
+        </div>
+        <div id="steamPanel" style="display:none;" class="input-item">
+            <label>蒸煮時間 (min)</label><input type="number" id="steamTime" value="15" oninput="calculate()">
+        </div>
+    </div>
+
+    <div class="section" style="background: #f1f8e9;">
+        <div class="section-title">預發酵種 (Pre-ferments)</div>
+        <div class="flex-row">
+            <div class="input-item"><label>魯邦種 1:1 (g)</label><input type="number" id="levain" value="0" oninput="calculate()"></div>
+            <div class="input-item"><label>Poolish/Biga (g)</label><input type="number" id="poolish" value="0" oninput="calculate()"></div>
+            <div class="input-item" style="flex:0.6;"><label>其含水 %</label><input type="number" id="poolishHydro" value="100" oninput="calculate()"></div>
+        </div>
+        <div class="flex-row" style="margin-top:5px;">
+            <div class="input-item"><label>老麵 Old Dough (g)</label><input type="number" id="oldDough" value="0" oninput="calculate()"></div>
+            <div class="input-item" style="flex:0.6;"><label>其含水 %</label><input type="number" id="oldDoughHydro" value="65" oninput="calculate()"></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">配方比例與副材料</div>
+        <div class="flex-row">
+            <div class="input-item"><label>總含水量 %</label><input type="number" id="hydro" value="70" oninput="calculate()"></div>
+            <div class="input-item"><label>牛奶 (g)</label><input type="number" id="milk" value="0" oninput="calculate()"></div>
+            <div class="input-item"><label>全蛋 (g)</label><input type="number" id="egg" value="0" oninput="calculate()"></div>
+        </div>
+        <div class="flex-row">
+            <div class="input-item"><label>油脂 (g)</label><input type="number" id="fat" value="0" oninput="calculate()"></div>
+            <div class="input-item"><label>鹽 (g)</label><input type="number" id="salt" value="10" oninput="calculate()"></div>
+            <div class="input-item"><label>糖 (g)</label><input type="number" id="sugar" value="0" oninput="calculate()"></div>
+            <div class="input-item"><label>餡料 (g)</label><input type="number" id="fillings" value="0" oninput="calculate()"></div>
+        </div>
+    </div>
+
+    <div class="status-grid">
+        <div class="status-card"><div class="status-label">燒減率</div><div id="lossDisp" class="status-value">-- %</div></div>
+        <div class="status-card"><div class="status-label">難度/S&F次數</div><div id="sensory" class="status-value">--</div></div>
+        <div class="status-card"><div class="status-label">建議首發 (Bulk)</div><div id="bulkDisp" class="status-value">-- 分</div></div>
+        <div class="status-card"><div class="status-label">出缸溫度</div><div id="outTempDisp" class="status-value">-- °C</div></div>
+    </div>
+
+    <div class="result-box">
+        <div class="result-item"><span>需添加 **麵粉**:</span><span id="resFlour" class="highlight">--</span></div>
+        <div class="result-item"><span>需添加 **純水**:</span><span id="resWater" class="highlight">--</span></div>
+        <div id="liquidWarn" class="warn"></div>
+        <hr style="border:0.5px solid #ffe0b2;">
+        <div class="result-item" style="font-size:0.8rem; opacity:0.8;"><span>單個分割重量: <span id="resSplit">--</span></span><span>總下缸重量: <span id="resTotal">--</span></span></div>
+    </div>
+</div>
+
+<script>
+const presets = {
+    baguette: { hydro: 72, poolish: 150, poolishHydro: 100, salt: 10, temp: 240, time: 25, mode: 'bake', lidded: false },
+    sourdough: { hydro: 80, levain: 100, salt: 10, temp: 240, time: 40, mode: 'bake', lidded: true },
+    old_dough_toast: { hydro: 68, oldDough: 100, oldDoughHydro: 65, milk: 80, egg: 30, fat: 40, salt: 10, temp: 180, time: 35, mode: 'bake' },
+    brioche: { hydro: 65, milk: 50, egg: 150, fat: 120, sugar: 40, salt: 8, temp: 170, time: 30, mode: 'bake' },
+    mantou: { hydro: 48, oldDough: 50, milk: 100, fat: 5, salt: 2, sugar: 20, steamTime: 15, mode: 'steam' }
+};
+
+function applyPreset() {
+    const p = presets[document.getElementById('preset').value];
+    if (!p) return;
+    // 重置所有預發酵種欄位
+    ['levain','poolish','oldDough','milk','egg','fat','salt','sugar'].forEach(k => document.getElementById(k).value = p[k] || 0);
+    document.getElementById('hydro').value = p.hydro || 70;
+    document.getElementById('poolishHydro').value = p.poolishHydro || 100;
+    document.getElementById('oldDoughHydro').value = p.oldDoughHydro || 65;
+    if (p.mode === 'bake') {
+        document.getElementById('modeBake').checked = true;
+        document.getElementById('temp').value = p.temp;
+        document.getElementById('time').value = p.time;
+        document.getElementById('lidded').checked = p.lidded || false;
+    } else {
+        document.getElementById('modeSteam').checked = true;
+        document.getElementById('steamTime').value = p.steamTime;
+    }
+    toggleMethod();
+}
+
+function toggleMethod() {
+    const isBake = document.getElementById('modeBake').checked;
+    document.getElementById('bakePanel').style.display = isBake ? 'flex' : 'none';
+    document.getElementById('steamPanel').style.display = isBake ? 'none' : 'block';
+    calculate();
+}
+
+function calculate() {
+    const unitW = parseFloat(document.getElementById('unitWeight').value) || 0;
+    const qty = parseFloat(document.getElementById('qty').value) || 0;
+    const envT = parseFloat(document.getElementById('envTemp').value) || 26;
+    const hydro = parseFloat(document.getElementById('hydro').value) / 100 || 0;
+    
+    // 預發酵種
+    const lev = parseFloat(document.getElementById('levain').value) || 0;
+    const pol = parseFloat(document.getElementById('poolish').value) || 0;
+    const polH = parseFloat(document.getElementById('poolishHydro').value) / 100 || 0;
+    const od = parseFloat(document.getElementById('oldDough').value) || 0;
+    const odH = parseFloat(document.getElementById('oldDoughHydro').value) / 100 || 0;
+
+    // 副材料
+    const milk = parseFloat(document.getElementById('milk').value) || 0;
+    const egg = parseFloat(document.getElementById('egg').value) || 0;
+    const fat = parseFloat(document.getElementById('fat').value) || 0;
+    const salt = parseFloat(document.getElementById('salt').value) || 0;
+    const sugar = parseFloat(document.getElementById('sugar').value) || 0;
+    const fillings = parseFloat(document.getElementById('fillings').value) || 0;
+
+    // 燒減率
+    let loss = document.getElementById('modeBake').checked ? ((parseFloat(document.getElementById('temp').value)/100)*(parseFloat(document.getElementById('time').value)/5)+2) : (parseFloat(document.getElementById('steamTime').value)/10 + 1);
+    if(document.getElementById('modeBake').checked && document.getElementById('lidded').checked) loss *= 0.65;
+    loss = Math.min(Math.max(loss, 1), 28);
+    document.getElementById('lossDisp').innerText = loss.toFixed(1) + "%";
+
+    // 核心逆推
+    const physDough = (unitW * qty) / (1 - (loss / 100));
+    const waterInMilk = milk * 0.9;
+    const waterInEgg = egg * 0.75;
+    const fixedNonWater = salt + fat + fillings + (milk * 0.1) + (egg * 0.25);
+    
+    const totalFlour = (physDough - fixedNonWater) / (1 + hydro);
+    const totalWater = totalFlour * hydro;
+
+    // 扣除預發酵種中的粉與水
+    const flourInLev = lev * 0.5;
+    const waterInLev = lev * 0.5;
+    const flourInPol = pol / (1 + polH);
+    const waterInPol = pol - flourInPol;
+    const flourInOd = od / (1 + odH);
+    const waterInOd = od - flourInOd;
+
+    const resFlour = totalFlour - flourInLev - flourInPol - flourInOd;
+    const resWater = totalWater - waterInLev - waterInPol - waterInOd - waterInMilk - waterInEgg;
+    const totalDoughWeight = physDough + sugar;
+
+    // 顯示結果
+    document.getElementById('resFlour').innerText = Math.max(0, resFlour).toFixed(1) + " g";
+    document.getElementById('resWater').innerText = Math.max(0, resWater).toFixed(1) + " g";
+    document.getElementById('resSplit').innerText = (totalDoughWeight/qty).toFixed(1) + " g";
+    document.getElementById('resTotal').innerText = totalDoughWeight.toFixed(1) + " g";
+
+    const warn = document.getElementById('liquidWarn');
+    if(resWater < 0) { warn.innerText = `⚠️ 液體已超標 ${Math.abs(resWater).toFixed(1)}g！請調高含水 % 或減少蛋奶/發酵種。`; warn.style.display="block"; }
+    else { warn.style.display="none"; }
+
+    // 感官與環境
+    const stars = hydro > 0.8 ? "★★★★★" : (hydro > 0.72 ? "★★★★" : "★★★");
+    const folds = hydro > 0.75 ? "3-4次" : "1-2次";
+    document.getElementById('sensory').innerText = `${stars} / ${folds}`;
+    document.getElementById('bulkDisp').innerText = Math.round(90 * Math.pow(1.5, (26-envT)/5)) + " 分";
+    document.getElementById('outTempDisp').innerText = (hydro > 0.72 ? "22-24" : "26-28");
+}
+toggleMethod();
+</script>
+</body>
+</html>
