@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大師級麵團計算機 by Tetsu</title>
+    <title>大師級麵團計算機 v12</title>
     
     <link rel="icon" type="image/png" href="bread-icon.png">
     <link rel="apple-touch-icon" href="bread-icon.png">
@@ -23,29 +23,35 @@
         .method-toggle label { flex: 1; text-align: center; cursor: pointer; padding: 6px; margin: 0; font-size: 0.85rem; }
         .method-toggle input { display: none; }
         .method-toggle input:checked + span { background: var(--primary); color: white; display: block; border-radius: 4px; padding: 6px; }
-        .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 15px; }
-        .status-card { background: #fdf5e6; padding: 8px; border-radius: 6px; text-align: center; border: 1px solid #f3e5f5; }
+        .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 10px; }
+        .status-card { background: #fdf5e6; padding: 8px; border-radius: 6px; text-align: center; border: 1px solid #f3e5f5; position: relative; }
         .status-label { font-size: 0.65rem; color: #795548; }
         .status-value { font-weight: bold; font-size: 0.85rem; color: var(--primary); }
-        .result-box { background: #fff3e0; padding: 15px; border-radius: 8px; border: 2px solid #ffe0b2; }
+        .result-box { background: #fff3e0; padding: 15px; border-radius: 8px; border: 2px solid #ffe0b2; margin-top: 15px; }
         .result-item { display: flex; justify-content: space-between; margin-bottom: 6px; align-items: center; }
         .highlight { color: var(--accent); font-weight: 800; font-size: 1.4rem; }
         .warn { color: #d32f2f; font-size: 0.7rem; background: #ffebee; padding: 5px; border-radius: 4px; display: none; margin-top: 5px; }
+        
+        /* 計時器樣式 */
+        .timer-btn { width: 100%; background: #4caf50; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer; margin-top: 5px; transition: 0.2s; }
+        .timer-btn:active { background: #388e3c; }
+        .timer-display { text-align: center; font-size: 0.85rem; color: #d84315; font-weight: bold; margin-top: 8px; display: none; }
+        .badge { font-size: 0.65rem; background: #ffe0b2; color: #e65100; padding: 2px 4px; border-radius: 4px; margin-left: 5px; font-weight:normal; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>麵團全功能計算機 v11</h2>
+    <h2>麵團全功能計算機 v12</h2>
 
     <div class="section" style="background: #fdfaf6;">
         <div class="section-title">情境快選</div>
         <select id="preset" onchange="applyPreset()">
             <option value="custom">-- 自定義模式 --</option>
-            <option value="baguette">法棍 (波蘭種 / 72% 水)</option>
-            <option value="sourdough">歐包 (魯邦種 / 80% 水 / 有蓋)</option>
+            <option value="baguette">法棍 (Poolish / 72% 水)</option>
+            <option value="sourdough">歐包 (Levain / 80% 水 / 有蓋)</option>
+            <option value="toast">湯種生吐司 (5%湯種 / 70% 水 / 高奶油)</option>
             <option value="anpan">紅豆麵包 (包入 40g 餡 / 65% 水)</option>
-            <option value="brioche">布里歐 (高油脂 / 全蛋奶)</option>
             <option value="mantou">老麵饅頭 (蒸)</option>
         </select>
     </div>
@@ -57,7 +63,6 @@
             <div class="input-item"><label>數量</label><input type="number" id="qty" value="6" oninput="calculate()"></div>
             <div class="input-item" style="flex:1.5;"><label>每顆包入餡料重 (g)</label><input type="number" id="wrapFillingPer" value="0" oninput="calculate()"></div>
         </div>
-        <p style="font-size:0.7rem; color:#888; margin-top:5px;">* 包入餡料（如紅豆泥）將從成品重量中扣除，剩餘部分推算麵團量。</p>
     </div>
 
     <div class="section">
@@ -78,13 +83,21 @@
     </div>
 
     <div class="section" style="background: #f1f8e9;">
-        <div class="section-title">預發酵種 (Pre-ferments)</div>
+        <div class="section-title">種麵與燙麵 (Pre-ferments & Roux)</div>
         <div class="flex-row">
             <div class="input-item"><label>魯邦種 1:1 (g)</label><input type="number" id="levain" value="0" oninput="calculate()"></div>
             <div class="input-item"><label>Poolish/Biga (g)</label><input type="number" id="poolish" value="0" oninput="calculate()"></div>
             <div class="input-item" style="flex:0.6;"><label>其含水 %</label><input type="number" id="poolishHydro" value="100" oninput="calculate()"></div>
+        </div>
+        <div class="flex-row" style="margin-top:5px;">
             <div class="input-item"><label>老麵 (g)</label><input type="number" id="oldDough" value="0" oninput="calculate()"></div>
             <div class="input-item" style="flex:0.6;"><label>其含水 %</label><input type="number" id="oldDoughHydro" value="65" oninput="calculate()"></div>
+        </div>
+        <hr style="border: 0.5px dashed #c5e1a5; margin: 10px 0;">
+        <div class="flex-row">
+            <div class="input-item" style="flex:1.2;"><label>湯種/燙麵總重 (g)</label><input type="number" id="tangzhong" value="0" oninput="calculate()"></div>
+            <div class="input-item" style="flex:1;"><label>湯種含水 %<br><small>(1:5 = 500%)</small></label><input type="number" id="tzHydro" value="500" oninput="calculate()"></div>
+            <div class="input-item" style="flex:1.5; font-size:0.7rem; color:#558b2f; align-self:center;" id="tzSuggestDisp">建議佔總粉5~10%</div>
         </div>
     </div>
 
@@ -99,46 +112,57 @@
         <div class="flex-row">
             <div class="input-item"><label>鹽 (g)</label><input type="number" id="salt" value="6" oninput="calculate()"></div>
             <div class="input-item"><label>糖 (g)</label><input type="number" id="sugar" value="30" oninput="calculate()"></div>
-            <div class="input-item" style="flex:1.5;"><label>拌入式餡料總重 (g, 打進麵團)</label><input type="number" id="intFillingTotal" value="0" oninput="calculate()"></div>
+            <div class="input-item" style="flex:1.5;"><label>拌入式餡料總重 (g)</label><input type="number" id="intFillingTotal" value="0" oninput="calculate()"></div>
         </div>
     </div>
 
     <div class="status-grid">
         <div class="status-card"><div class="status-label">燒減率</div><div id="lossDisp" class="status-value">-- %</div></div>
-        <div class="status-card"><div class="status-label">難度/S&F次數</div><div id="sensory" class="status-value">--</div></div>
-        <div class="status-card"><div class="status-label">建議首發</div><div id="bulkDisp" class="status-value">-- 分</div></div>
+        <div class="status-card"><div class="status-label">難度/S&F</div><div id="sensory" class="status-value">--</div></div>
         <div class="status-card"><div class="status-label">出缸溫度</div><div id="outTempDisp" class="status-value">-- °C</div></div>
+        <div class="status-card" style="grid-column: span 3; background:#e8f5e9; border-color:#a5d6a7;">
+            <div class="status-label" style="color:#2e7d32;">一發 (Bulk) 建議時間 <span class="badge" id="bulkDispBadge">-- 分</span></div>
+            <button class="timer-btn" id="timerBtn" onclick="startTimer()">⏱️ 開始一發計時</button>
+            <div class="timer-display" id="timerDisplay"></div>
+        </div>
     </div>
 
     <div class="result-box">
         <div class="result-item"><span>需添加 **麵粉**:</span><span id="resFlour" class="highlight">--</span></div>
-        <div class="result-item"><span>需添加 **水**:</span><span id="resWater" class="highlight">--</span></div>
+        <div class="result-item"><span>需添加 **純水**:</span><span id="resWater" class="highlight">--</span></div>
         <div id="liquidWarn" class="warn"></div>
         <hr style="border:0.5px solid #ffe0b2;">
         <div class="result-item" style="font-size:0.9rem; font-weight:bold; color:#3e2723;">
-            <span>分割麵團 (含拌入餡): <span id="resSplit" style="color:var(--accent)">--</span> g</span>
-            <span>+ 餡料: <span id="resWrap" style="color:var(--accent)">--</span> g</span>
+            <span>分割麵團 (含拌入): <span id="resSplit" style="color:var(--accent)">--</span> g</span>
+            <span>+ 包餡: <span id="resWrap" style="color:var(--accent)">--</span> g</span>
         </div>
         <div class="result-item" style="font-size:0.75rem; opacity:0.8;"><span>下缸總重 (麵團+糖): <span id="resTotal">--</span> g</span></div>
     </div>
 </div>
 
 <script>
+// --- 預設值 ---
 const presets = {
     baguette: { hydro: 72, poolish: 150, salt: 10, temp: 240, time: 25, mode: 'bake' },
     sourdough: { hydro: 80, levain: 100, salt: 10, temp: 240, time: 40, mode: 'bake', lidded: true },
-    anpan: { unitWeight: 80, wrapFillingPer: 30, hydro: 62, milk: 50, fat: 20, salt: 4, sugar: 40, temp: 180, time: 12, mode: 'bake' },
-    brioche: { hydro: 65, milk: 50, egg: 150, fat: 120, sugar: 60, salt: 8, temp: 170, time: 30, mode: 'bake' },
+    toast: { unitWeight: 450, qty: 1, hydro: 70, tangzhong: 40, tzHydro: 500, milk: 50, fat: 30, sugar: 30, salt: 5, temp: 190, time: 35, mode: 'bake' },
+    anpan: { unitWeight: 80, wrapFillingPer: 30, hydro: 65, milk: 50, fat: 20, salt: 4, sugar: 40, temp: 180, time: 12, mode: 'bake' },
     mantou: { hydro: 48, milk: 100, fat: 5, salt: 2, sugar: 30, steamTime: 15, mode: 'steam' }
 };
 
 function applyPreset() {
     const p = presets[document.getElementById('preset').value];
     if (!p) return;
-    if(p.unitWeight) document.getElementById('unitWeight').value = p.unitWeight;
+    if(p.unitWeight !== undefined) document.getElementById('unitWeight').value = p.unitWeight;
+    if(p.qty !== undefined) document.getElementById('qty').value = p.qty;
     if(p.wrapFillingPer !== undefined) document.getElementById('wrapFillingPer').value = p.wrapFillingPer;
-    ['levain','poolish','oldDough','milk','egg','fat','salt','sugar'].forEach(k => document.getElementById(k).value = p[k] || 0);
+    
+    // 清空所有干擾變數
+    ['levain','poolish','oldDough','tangzhong','milk','egg','fat','salt','sugar','intFillingTotal'].forEach(k => document.getElementById(k).value = p[k] || 0);
+    
     document.getElementById('hydro').value = p.hydro || 70;
+    document.getElementById('tzHydro').value = p.tzHydro || 500;
+
     if (p.mode === 'bake') {
         document.getElementById('modeBake').checked = true;
         document.getElementById('temp').value = p.temp;
@@ -158,6 +182,8 @@ function toggleMethod() {
     calculate();
 }
 
+let bulkMinutes = 0;
+
 function calculate() {
     const unitW = parseFloat(document.getElementById('unitWeight').value) || 0;
     const qty = parseFloat(document.getElementById('qty').value) || 0;
@@ -171,17 +197,20 @@ function calculate() {
     loss = Math.min(Math.max(loss, 1), 28);
     document.getElementById('lossDisp').innerText = loss.toFixed(1) + "%";
 
-    // 核心邏輯：成品 = (純麵團 + 拌入餡) * (1-loss) + 包入餡
-    // 註：包入餡通常不計入發酵燒減，或損耗極小，故直接加回
+    // 重量推算
     const finishedBreadPart = (unitW * qty) - (wrapPer * qty);
     const rawBreadPartNeeded = finishedBreadPart / (1 - (loss / 100));
     
-    // 材料扣除
+    // 材料參數
     const lev = parseFloat(document.getElementById('levain').value) || 0;
     const pol = parseFloat(document.getElementById('poolish').value) || 0;
-    const polH = parseFloat(document.getElementById('poolishHydro').value) / 100 || 0;
+    const polH = parseFloat(document.getElementById('poolishHydro').value) / 100 || 1;
     const od = parseFloat(document.getElementById('oldDough').value) || 0;
-    const odH = parseFloat(document.getElementById('oldDoughHydro').value) / 100 || 0;
+    const odH = parseFloat(document.getElementById('oldDoughHydro').value) / 100 || 0.65;
+    
+    const tz = parseFloat(document.getElementById('tangzhong').value) || 0;
+    const tzH = parseFloat(document.getElementById('tzHydro').value) / 100 || 5;
+
     const milk = parseFloat(document.getElementById('milk').value) || 0;
     const egg = parseFloat(document.getElementById('egg').value) || 0;
     const fat = parseFloat(document.getElementById('fat').value) || 0;
@@ -189,12 +218,27 @@ function calculate() {
     const sugar = parseFloat(document.getElementById('sugar').value) || 0;
     const intFilling = parseFloat(document.getElementById('intFillingTotal').value) || 0;
 
+    // 總粉水推算
     const fixedNonWater = salt + fat + intFilling + (milk * 0.1) + (egg * 0.25);
     const totalFlour = (rawBreadPartNeeded - fixedNonWater) / (1 + hydro);
     const totalWater = totalFlour * hydro;
 
-    const resFlour = totalFlour - (lev*0.5) - (pol/(1+polH)) - (od/(1+odH));
-    const resWater = totalWater - (lev*0.5) - (pol - pol/(1+polH)) - (od - od/(1+odH)) - (milk*0.9) - (egg*0.75);
+    // 湯種建議顯示 (佔總粉比例)
+    const tzFlour = tz / (1 + tzH);
+    const tzWater = tz - tzFlour;
+    const tzRatio = (tzFlour / totalFlour * 100).toFixed(1);
+    const tzSuggestEl = document.getElementById('tzSuggestDisp');
+    if (tz > 0) {
+        tzSuggestEl.innerHTML = `佔總粉 <b>${tzRatio}%</b>`;
+        tzSuggestEl.style.color = (tzRatio > 10 || tzRatio < 3) ? '#d32f2f' : '#2e7d32';
+    } else {
+        tzSuggestEl.innerText = "建議佔總粉5~10%";
+        tzSuggestEl.style.color = "#558b2f";
+    }
+
+    // 預發酵種與湯種扣除
+    const resFlour = totalFlour - (lev*0.5) - (pol/(1+polH)) - (od/(1+odH)) - tzFlour;
+    const resWater = totalWater - (lev*0.5) - (pol - pol/(1+polH)) - (od - od/(1+odH)) - tzWater - (milk*0.9) - (egg*0.75);
 
     document.getElementById('resFlour').innerText = Math.max(0, resFlour).toFixed(1) + " g";
     document.getElementById('resWater').innerText = Math.max(0, resWater).toFixed(1) + " g";
@@ -203,13 +247,66 @@ function calculate() {
     document.getElementById('resTotal').innerText = (rawBreadPartNeeded + sugar).toFixed(1);
 
     const warn = document.getElementById('liquidWarn');
-    if(resWater < 0) { warn.innerText = `⚠️ 液體超標 ${Math.abs(resWater).toFixed(1)}g！`; warn.style.display="block"; }
+    if(resWater < 0) { warn.innerText = `⚠️ 液體超標 ${Math.abs(resWater).toFixed(1)}g！請調高含水量。`; warn.style.display="block"; }
     else { warn.style.display="none"; }
 
-    document.getElementById('bulkDisp').innerText = Math.round(90 * Math.pow(1.5, (26-envT)/5)) + " 分";
+    // 感官與發酵時間
+    bulkMinutes = Math.round(90 * Math.pow(1.5, (26-envT)/5));
+    document.getElementById('bulkDispBadge').innerText = `${bulkMinutes} 分`;
     document.getElementById('sensory').innerText = (hydro > 0.75 ? "★★★★ / 3次" : "★★★ / 1-2次");
     document.getElementById('outTempDisp').innerText = (hydro > 0.72 ? "22-24" : "26-28");
 }
+
+// --- 計時器邏輯 ---
+let countdownInterval;
+
+function startTimer() {
+    // 要求瀏覽器通知權限
+    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+        Notification.requestPermission();
+    }
+
+    if(bulkMinutes <= 0) return;
+    
+    const targetTime = new Date().getTime() + bulkMinutes * 60000;
+    const targetTimeStr = new Date(targetTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    const display = document.getElementById('timerDisplay');
+    const btn = document.getElementById('timerBtn');
+    
+    display.style.display = "block";
+    btn.innerText = "🔄 重新計時";
+    btn.style.background = "#ff9800"; // 變成橘色代表重置
+
+    clearInterval(countdownInterval);
+    
+    countdownInterval = setInterval(() => {
+        const now = new Date().getTime();
+        const distance = targetTime - now;
+
+        if (distance <= 0) {
+            clearInterval(countdownInterval);
+            display.innerText = "✅ 麵團一發已完成！";
+            display.style.color = "#2e7d32";
+            btn.innerText = "⏱️ 開始一發計時";
+            btn.style.background = "#4caf50";
+            
+            // 跳出系統通知
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification("🍞 麵團發酵完成！", { body: `您設定的 ${bulkMinutes} 分鐘一發時間已到，可以準備分割囉。`, icon: "bread-icon.png" });
+            } else {
+                alert(`🍞 麵團發酵完成！設定的 ${bulkMinutes} 分鐘一發時間已到。`);
+            }
+            return;
+        }
+
+        const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((distance % (1000 * 60)) / 1000);
+        display.innerText = `⏳ 倒數 ${m}分 ${s}秒 (預計 ${targetTimeStr} 完成)`;
+        display.style.color = "#d84315";
+    }, 1000);
+}
+
 calculate();
 </script>
 </body>
