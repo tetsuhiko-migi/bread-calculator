@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tetsu's Bakery 麵團計算機 v16 </title>
+    <title>Tetsu's Bakery 大師級麵團計算機 v17</title>
     
     <link rel="icon" type="image/png" href="bread-icon.png">
     <link rel="apple-touch-icon" href="bread-icon.png">
@@ -13,7 +13,6 @@
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: #333; display: flex; justify-content: center; padding: 10px; }
         .container { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 650px; width: 100%; }
         
-        /* Tab 樣式 */
         .tabs { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 2px solid #eee; }
         .tab-btn { padding: 10px 20px; cursor: pointer; border: none; background: #eee; border-radius: 8px 8px 0 0; font-weight: bold; color: #666; transition: 0.3s; }
         .tab-btn.active { background: var(--primary); color: white; }
@@ -27,14 +26,12 @@
         .input-item { flex: 1; min-width: 100px; margin-bottom: 8px; }
         label { display: block; font-size: 0.75rem; font-weight: bold; margin-bottom: 3px; color: #666; }
         
-        /* 移除預設箭頭，優化手機輸入 */
         input, select { 
             width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; box-sizing: border-box;
             -moz-appearance: textfield; 
         }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-        /* 成本表格樣式 */
         .cost-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
         .cost-table th { background: #f5f5f5; text-align: left; padding: 8px; border-bottom: 2px solid #ddd; }
         .cost-table td { padding: 8px; border-bottom: 1px solid #eee; }
@@ -56,7 +53,6 @@
         .warn { color: #d32f2f; font-size: 0.7rem; background: #ffebee; padding: 5px; border-radius: 4px; display: none; margin-top: 5px; }
         .recipe-hint { background: #e8f5e9; color: #2e7d32; font-size: 0.8rem; padding: 8px; border-radius: 6px; margin-top: 5px; display: none; border: 1px dashed #a5d6a7; }
         .timer-btn { width: 100%; background: #4caf50; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer; margin-top: 5px; transition: 0.2s; }
-        .timer-btn:active { background: #388e3c; }
         .timer-display { text-align: center; font-size: 0.85rem; color: #d84315; font-weight: bold; margin-top: 8px; display: none; }
         .badge { font-size: 0.65rem; background: #ffe0b2; color: #e65100; padding: 2px 4px; border-radius: 4px; margin-left: 5px; font-weight:normal; }
     </style>
@@ -64,7 +60,7 @@
 <body>
 
 <div class="container">
-    <h2>麵團全功能計算機 v16</h2>
+    <h2>麵團全功能計算機 v17</h2>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('calc')">配方計算</button>
@@ -176,8 +172,10 @@
                 <thead>
                     <tr><th style="width:25%">材料</th><th>單價($)</th><th>包裝(g)</th><th style="width:20%">配方用量</th><th>小計</th><th></th></tr>
                 </thead>
-                <tbody id="costBody"></tbody>
+                <tbody id="costBody">
+                    </tbody>
             </table>
+            <div id="fillingWarning" style="color:#d32f2f; font-size:0.75rem; display:none; margin-top:5px; margin-bottom:5px;"></div>
             <button class="add-row-btn" onclick="addCostRow()">+ 增加自訂材料</button>
         </div>
 
@@ -200,7 +198,9 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + tab).classList.add('active');
     document.querySelector(`.tab-btn[onclick="switchTab('${tab}')"]`).classList.add('active');
-    if(tab === 'cost') updateCostSheet();
+    if(tab === 'cost') {
+        renderCostTable(); // 只有切換分頁或新增刪除時才重繪 HTML
+    }
 }
 
 let bulkMinutes = 0;
@@ -252,8 +252,7 @@ const baseMaterials = [
     { id: 'egg', name: '雞蛋', price: 120, pkg: 600 }
 ];
 
-// 儲存總麵粉量供成本頁讀取
-let globalTotalFlour = 0;
+let globalTotalFlour = 0; // 儲存總麵粉量供成本頁讀取
 
 // --- 核心計算 ---
 const presets = {
@@ -320,8 +319,7 @@ function calculate() {
     const tzH = parseFloat(document.getElementById('tzHydro').value) / 100 || 5;
 
     const tzRecipeEl = document.getElementById('tzRecipeDisp');
-    let tzFlour = 0;
-    let tzWaterContributed = 0;
+    let tzFlour = 0, tzWaterContributed = 0;
 
     if (tzCooked > 0) {
         const rawTzTotal = tzCooked / 0.9; 
@@ -346,7 +344,7 @@ function calculate() {
     const totalFlour = (rawBreadPartNeeded - fixedNonWater) / (1 + hydro);
     const totalWater = totalFlour * hydro;
     
-    // 更新全域變數供成本計算使用 (包含所有種麵的麵粉)
+    // 供成本計算讀取
     globalTotalFlour = totalFlour;
 
     const tzRatio = (tzFlour / totalFlour * 100).toFixed(1);
@@ -369,7 +367,7 @@ function calculate() {
     document.getElementById('resTotal').innerText = (rawBreadPartNeeded + sugar).toFixed(1);
 
     const warn = document.getElementById('liquidWarn');
-    if(resWater < 0) { warn.innerText = `⚠️ 液體超標 ${Math.abs(resWater).toFixed(1)}g！請調高含水量。`; warn.style.display="block"; }
+    if(resWater < 0) { warn.innerText = `⚠️ 液體超標 ${Math.abs(resWater).toFixed(1)}g！`; warn.style.display="block"; }
     else { warn.style.display="none"; }
 
     bulkMinutes = Math.round(90 * Math.pow(1.5, (26-envT)/5));
@@ -377,64 +375,77 @@ function calculate() {
     document.getElementById('sensory').innerText = (hydro > 0.75 ? "★★★★ / 3次" : "★★★ / 1-2次");
     document.getElementById('outTempDisp').innerText = (hydro > 0.72 ? "22-24" : "26-28");
     
-    if(document.getElementById('tab-cost').classList.contains('active')) updateCostSheet();
+    // 如果配方變更，更新成本的「純數字」即可，不重繪 HTML
+    updateCostValuesOnly();
 }
 
-// --- 成本計算更新 ---
-function updateCostSheet() {
+// --- 分離：HTML 表格渲染 (只在切換分頁或新增/刪除時執行) ---
+function renderCostTable() {
     const body = document.getElementById('costBody');
     body.innerHTML = '';
-    let totalCost = 0;
-    const qty = parseFloat(document.getElementById('qty').value) || 1;
-
+    
     baseMaterials.forEach(m => {
-        let usage = 0;
-        // 將所有麵粉（主麵粉+所有種麵）精確加總計入成本
-        if(m.id === 'totalFlourCost') {
-            usage = globalTotalFlour;
-        } else {
-            usage = parseFloat(document.getElementById(m.id).value) || 0;
-        }
-        
-        const rowCost = (m.price / m.pkg) * usage;
-        totalCost += rowCost;
-        
         body.innerHTML += `
             <tr>
                 <td>${m.name}</td>
-                <td><input type="number" step="any" inputmode="decimal" class="cost-input" value="${m.price}" oninput="updateMat('${m.id}', 'price', this.value)"></td>
-                <td><input type="number" step="any" inputmode="decimal" class="cost-input" value="${m.pkg}" oninput="updateMat('${m.id}', 'pkg', this.value)"></td>
-                <td>${usage.toFixed(1)} g</td>
-                <td>$${rowCost.toFixed(1)}</td>
+                <td><input type="number" step="any" inputmode="decimal" class="cost-input" value="${m.price}" oninput="updateBaseMat('${m.id}', 'price', this.value)"></td>
+                <td><input type="number" step="any" inputmode="decimal" class="cost-input" value="${m.pkg}" oninput="updateBaseMat('${m.id}', 'pkg', this.value)"></td>
+                <td id="usage-base-${m.id}">0.0 g</td>
+                <td id="subtotal-base-${m.id}">$0.0</td>
                 <td></td>
             </tr>`;
     });
 
-    // 加入配方中填寫的包餡
+    customIngredients.forEach((m, i) => {
+        body.innerHTML += `
+            <tr>
+                <td><input type="text" value="${m.name}" oninput="updateCustomMat(${i}, 'name', this.value)" style="width:100%; padding:6px; border:1px solid #ddd; border-radius:4px;"></td>
+                <td><input type="number" step="any" inputmode="decimal" class="cost-input" value="${m.price}" oninput="updateCustomMat(${i}, 'price', this.value)"></td>
+                <td><input type="number" step="any" inputmode="decimal" class="cost-input" value="${m.pkg}" oninput="updateCustomMat(${i}, 'pkg', this.value)"></td>
+                <td><input type="number" step="any" inputmode="decimal" class="cost-input" value="${m.usage}" oninput="updateCustomMat(${i}, 'usage', this.value)"></td>
+                <td id="subtotal-custom-${i}">$0.0</td>
+                <td><button class="remove-btn" onclick="removeCostRow(${i})">×</button></td>
+            </tr>`;
+    });
+    
+    updateCostValuesOnly();
+}
+
+// --- 分離：純數字即時計算 (打字時觸發，不破壞輸入框) ---
+function updateCostValuesOnly() {
+    let totalCost = 0;
+    const qty = parseFloat(document.getElementById('qty').value) || 1;
+
+    baseMaterials.forEach(m => {
+        let usage = (m.id === 'totalFlourCost') ? globalTotalFlour : (parseFloat(document.getElementById(m.id).value) || 0);
+        const rowCost = (m.price / m.pkg) * usage;
+        totalCost += rowCost;
+        
+        // 直接替換純文字，不重寫 input
+        const usageTd = document.getElementById(`usage-base-${m.id}`);
+        const subtotalTd = document.getElementById(`subtotal-base-${m.id}`);
+        if(usageTd) usageTd.innerText = `${usage.toFixed(1)} g`;
+        if(subtotalTd) subtotalTd.innerText = `$${rowCost.toFixed(1)}`;
+    });
+
+    // 檢查是否有忘記加入的餡料
     const wrapPer = parseFloat(document.getElementById('wrapFillingPer').value) || 0;
     const intFilling = parseFloat(document.getElementById('intFillingTotal').value) || 0;
     const totalFillingUsage = (wrapPer * qty) + intFilling;
     
-    if(totalFillingUsage > 0) {
-        // 預設尋找是否已經有自訂的餡料項目，若無則暫時不自動計入總價，讓使用者自己加
-        const hasFillingInCustom = customIngredients.some(c => c.name.includes('餡'));
-        if(!hasFillingInCustom) {
-            body.innerHTML += `<tr><td colspan="6" style="color:#d32f2f; font-size:0.75rem;">⚠️ 配方中含有 ${totalFillingUsage}g 餡料，請按下方按鈕新增成本。</td></tr>`;
-        }
+    const warnEl = document.getElementById('fillingWarning');
+    if(totalFillingUsage > 0 && !customIngredients.some(c => c.name.includes('餡') || c.name.includes('配料'))) {
+        warnEl.innerText = `⚠️ 配方中含有 ${totalFillingUsage}g 餡料，請按下方按鈕新增成本！`;
+        warnEl.style.display = "block";
+    } else {
+        warnEl.style.display = "none";
     }
 
     customIngredients.forEach((m, i) => {
         const rowCost = (m.price / m.pkg) * m.usage;
         totalCost += rowCost;
-        body.innerHTML += `
-            <tr>
-                <td><input type="text" value="${m.name}" oninput="customIngredients[${i}].name=this.value" style="width:100%; padding:6px; border:1px solid #ddd; border-radius:4px;"></td>
-                <td><input type="number" step="any" inputmode="decimal" class="cost-input" value="${m.price}" oninput="customIngredients[${i}].price=parseFloat(this.value)||0;updateCostSheet()"></td>
-                <td><input type="number" step="any" inputmode="decimal" class="cost-input" value="${m.pkg}" oninput="customIngredients[${i}].pkg=parseFloat(this.value)||1;updateCostSheet()"></td>
-                <td><input type="number" step="any" inputmode="decimal" class="cost-input" value="${m.usage}" oninput="customIngredients[${i}].usage=parseFloat(this.value)||0;updateCostSheet()"></td>
-                <td>$${rowCost.toFixed(1)}</td>
-                <td><button class="remove-btn" onclick="customIngredients.splice(${i},1);updateCostSheet()">×</button></td>
-            </tr>`;
+        const subtotalTd = document.getElementById(`subtotal-custom-${i}`);
+        if(subtotalTd) subtotalTd.innerText = `$${rowCost.toFixed(1)}`;
     });
 
     document.getElementById('totalBatchCost').innerText = `$ ${totalCost.toFixed(1)}`;
@@ -443,23 +454,38 @@ function updateCostSheet() {
     document.getElementById('suggestedPrice').innerText = `$ ${Math.round(single/0.33)} ~ $ ${Math.round(single/0.25)}`;
 }
 
-function updateMat(id, field, val) {
+// --- 綁定輸入更新資料庫 ---
+function updateBaseMat(id, field, val) {
     baseMaterials.find(m => m.id === id)[field] = parseFloat(val) || 0;
-    updateCostSheet();
+    updateCostValuesOnly(); // 只算數字，不重繪表單
 }
 
+function updateCustomMat(index, field, val) {
+    if(field === 'name') {
+        customIngredients[index][field] = val;
+    } else {
+        customIngredients[index][field] = parseFloat(val) || 0;
+        updateCostValuesOnly(); // 只算數字，不重繪表單
+    }
+}
+
+// --- 新增/刪除需要重繪 ---
 function addCostRow() { 
-    // 自動帶入配方中的餡料總量作為預設值
     const qty = parseFloat(document.getElementById('qty').value) || 1;
     const wrapPer = parseFloat(document.getElementById('wrapFillingPer').value) || 0;
     const intFilling = parseFloat(document.getElementById('intFillingTotal').value) || 0;
     const totalFillingUsage = (wrapPer * qty) + intFilling;
     
     customIngredients.push({ name: '包餡/配料', price: 0, pkg: 1000, usage: totalFillingUsage }); 
-    updateCostSheet(); 
+    renderCostTable(); 
 }
 
-calculate();
+function removeCostRow(index) {
+    customIngredients.splice(index, 1);
+    renderCostTable();
+}
+
+calculate(); // 初始載入
 </script>
 </body>
 </html>
