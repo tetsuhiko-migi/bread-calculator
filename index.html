@@ -3,22 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大師級麵團計算機 v13</title>
+    <title>大師級麵團計算機 v16</title>
     
     <link rel="icon" type="image/png" href="bread-icon.png">
     <link rel="apple-touch-icon" href="bread-icon.png">
     
     <style>
-        :root { --primary: #2b1d1a; --accent: #d84315; --bg: #f8f9fa; --card: #ffffff; }
+        :root { --primary: #2b1d1a; --accent: #d84315; --bg: #f8f9fa; --card: #ffffff; --green: #2e7d32; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: #333; display: flex; justify-content: center; padding: 10px; }
         .container { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 650px; width: 100%; }
+        
+        /* Tab 樣式 */
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 2px solid #eee; }
+        .tab-btn { padding: 10px 20px; cursor: pointer; border: none; background: #eee; border-radius: 8px 8px 0 0; font-weight: bold; color: #666; transition: 0.3s; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
         h2 { text-align: center; color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin: 0 0 15px 0; font-size: 1.4rem; }
         .section { margin-bottom: 15px; padding: 12px; border: 1px solid #eee; border-radius: 8px; background: #fff; }
         .section-title { font-size: 0.85rem; font-weight: bold; color: var(--accent); margin-bottom: 10px; border-left: 4px solid var(--accent); padding-left: 8px; }
         .flex-row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
         .input-item { flex: 1; min-width: 100px; margin-bottom: 8px; }
         label { display: block; font-size: 0.75rem; font-weight: bold; margin-bottom: 3px; color: #666; }
-        input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
+        
+        /* 移除預設箭頭，優化手機輸入 */
+        input, select { 
+            width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; box-sizing: border-box;
+            -moz-appearance: textfield; 
+        }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+        /* 成本表格樣式 */
+        .cost-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
+        .cost-table th { background: #f5f5f5; text-align: left; padding: 8px; border-bottom: 2px solid #ddd; }
+        .cost-table td { padding: 8px; border-bottom: 1px solid #eee; }
+        .cost-input { width: 100% !important; padding: 6px !important; border: 1px solid #ddd !important; border-radius: 4px; }
+        .add-row-btn { background: #607d8b; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; margin-top: 10px; width: 100%; font-weight: bold; }
+        .remove-btn { color: #d32f2f; cursor: pointer; font-weight: bold; border: none; background: none; font-size: 1.2rem; }
+
         .method-toggle { display: flex; background: #eee; border-radius: 6px; padding: 3px; margin-bottom: 10px; }
         .method-toggle label { flex: 1; text-align: center; cursor: pointer; padding: 6px; margin: 0; font-size: 0.85rem; }
         .method-toggle input { display: none; }
@@ -31,11 +54,7 @@
         .result-item { display: flex; justify-content: space-between; margin-bottom: 6px; align-items: center; }
         .highlight { color: var(--accent); font-weight: 800; font-size: 1.4rem; }
         .warn { color: #d32f2f; font-size: 0.7rem; background: #ffebee; padding: 5px; border-radius: 4px; display: none; margin-top: 5px; }
-        
-        /* 湯種配方提示 */
         .recipe-hint { background: #e8f5e9; color: #2e7d32; font-size: 0.8rem; padding: 8px; border-radius: 6px; margin-top: 5px; display: none; border: 1px dashed #a5d6a7; }
-        
-        /* 計時器樣式 */
         .timer-btn { width: 100%; background: #4caf50; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer; margin-top: 5px; transition: 0.2s; }
         .timer-btn:active { background: #388e3c; }
         .timer-display { text-align: center; font-size: 0.85rem; color: #d84315; font-weight: bold; margin-top: 8px; display: none; }
@@ -45,106 +64,198 @@
 <body>
 
 <div class="container">
-    <h2>麵團全功能計算機 v13</h2>
+    <h2>麵團全功能計算機 v16</h2>
 
-    <div class="section" style="background: #fdfaf6;">
-        <div class="section-title">情境快選</div>
-        <select id="preset" onchange="applyPreset()">
-            <option value="custom">-- 自定義模式 --</option>
-            <option value="baguette">法棍 (Poolish / 72% 水)</option>
-            <option value="sourdough">歐包 (Levain / 80% 水 / 有蓋)</option>
-            <option value="toast">湯種生吐司 (5%湯種 / 70% 水 / 高奶油)</option>
-            <option value="anpan">紅豆麵包 (包入 40g 餡 / 65% 水)</option>
-            <option value="mantou">老麵饅頭 (蒸)</option>
-        </select>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('calc')">配方計算</button>
+        <button class="tab-btn" onclick="switchTab('cost')">成本分析</button>
     </div>
 
-    <div class="section">
-        <div class="section-title">生產目標與餡料設定</div>
-        <div class="flex-row">
-            <div class="input-item" style="flex:2;"><label>單個成品目標總重 (g)</label><input type="number" id="unitWeight" value="100" oninput="calculate()"></div>
-            <div class="input-item"><label>數量</label><input type="number" id="qty" value="6" oninput="calculate()"></div>
-            <div class="input-item" style="flex:1.5;"><label>每顆包入餡料重 (g)</label><input type="number" id="wrapFillingPer" value="0" oninput="calculate()"></div>
+    <div id="tab-calc" class="tab-content active">
+        <div class="section" style="background: #fdfaf6;">
+            <div class="section-title">情境快選</div>
+            <select id="preset" onchange="applyPreset()">
+                <option value="custom">-- 自定義模式 --</option>
+                <option value="baguette">法棍 (Poolish / 72% 水)</option>
+                <option value="sourdough">歐包 (Levain / 80% 水 / 有蓋)</option>
+                <option value="toast">湯種生吐司 (5%湯種 / 70% 水 / 高奶油)</option>
+                <option value="anpan">紅豆麵包 (包入 40g 餡 / 65% 水)</option>
+                <option value="mantou">老麵饅頭 (蒸)</option>
+            </select>
+        </div>
+
+        <div class="section">
+            <div class="section-title">生產目標與餡料設定</div>
+            <div class="flex-row">
+                <div class="input-item" style="flex:2;"><label>單個成品目標總重 (g)</label><input type="number" step="any" inputmode="decimal" id="unitWeight" value="100" oninput="calculate()"></div>
+                <div class="input-item"><label>數量</label><input type="number" step="any" inputmode="numeric" id="qty" value="6" oninput="calculate()"></div>
+                <div class="input-item" style="flex:1.5;"><label>每顆包入餡料重 (g)</label><input type="number" step="any" inputmode="decimal" id="wrapFillingPer" value="0" oninput="calculate()"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">烘焙方式與環境</div>
+            <div class="method-toggle">
+                <label><input type="radio" name="method" id="modeBake" value="bake" checked onclick="toggleMethod()"><span>烤 (Bake)</span></label>
+                <label><input type="radio" name="method" id="modeSteam" value="steam" onclick="toggleMethod()"><span>蒸 (Steam)</span></label>
+            </div>
+            <div id="bakePanel" class="flex-row">
+                <div class="input-item"><label>環境氣溫 (°C)</label><input type="number" step="any" inputmode="decimal" id="envTemp" value="26" oninput="calculate()"></div>
+                <div class="input-item"><label>溫度 (°C)</label><input type="number" step="any" inputmode="decimal" id="temp" value="180" oninput="calculate()"></div>
+                <div class="input-item"><label>時間 (min)</label><input type="number" step="any" inputmode="decimal" id="time" value="15" oninput="calculate()"></div>
+                <div class="input-item" style="flex:0.5; text-align:center;"><label>有蓋</label><input type="checkbox" id="lidded" onchange="calculate()" style="width:18px; height:18px;"></div>
+            </div>
+            <div id="steamPanel" style="display:none;" class="input-item">
+                <label>蒸煮時間 (min)</label><input type="number" step="any" inputmode="decimal" id="steamTime" value="15" oninput="calculate()">
+            </div>
+        </div>
+
+        <div class="section" style="background: #f1f8e9;">
+            <div class="section-title">種麵與燙麵 (Pre-ferments & Roux)</div>
+            <div class="flex-row">
+                <div class="input-item"><label>魯邦種 1:1 (g)</label><input type="number" step="any" inputmode="decimal" id="levain" value="0" oninput="calculate()"></div>
+                <div class="input-item"><label>Poolish/Biga (g)</label><input type="number" step="any" inputmode="decimal" id="poolish" value="0" oninput="calculate()"></div>
+                <div class="input-item" style="flex:0.6;"><label>其含水 %</label><input type="number" step="any" inputmode="decimal" id="poolishHydro" value="100" oninput="calculate()"></div>
+            </div>
+            <div class="flex-row" style="margin-top:5px;">
+                <div class="input-item"><label>老麵 (g)</label><input type="number" step="any" inputmode="decimal" id="oldDough" value="0" oninput="calculate()"></div>
+                <div class="input-item" style="flex:0.6;"><label>其含水 %</label><input type="number" step="any" inputmode="decimal" id="oldDoughHydro" value="65" oninput="calculate()"></div>
+            </div>
+            <hr style="border: 0.5px dashed #c5e1a5; margin: 10px 0;">
+            <div class="flex-row">
+                <div class="input-item" style="flex:1.2;"><label>下缸熟湯種重 (g)</label><input type="number" step="any" inputmode="decimal" id="tangzhong" value="0" oninput="calculate()"></div>
+                <div class="input-item" style="flex:1;"><label>生料含水 %<br><small>(1:5 = 500%)</small></label><input type="number" step="any" inputmode="decimal" id="tzHydro" value="500" oninput="calculate()"></div>
+                <div class="input-item" style="flex:1.5; font-size:0.7rem; color:#558b2f; align-self:center;" id="tzSuggestDisp">建議佔總粉5~10%</div>
+            </div>
+            <div id="tzRecipeDisp" class="recipe-hint"></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">配方比例與拌入材料</div>
+            <div class="flex-row">
+                <div class="input-item"><label>總含水量 %</label><input type="number" step="any" inputmode="decimal" id="hydro" value="65" oninput="calculate()"></div>
+                <div class="input-item"><label>牛奶 (g)</label><input type="number" step="any" inputmode="decimal" id="milk" value="0" oninput="calculate()"></div>
+                <div class="input-item"><label>全蛋 (g)</label><input type="number" step="any" inputmode="decimal" id="egg" value="0" oninput="calculate()"></div>
+                <div class="input-item"><label>油脂 (g)</label><input type="number" step="any" inputmode="decimal" id="fat" value="0" oninput="calculate()"></div>
+            </div>
+            <div class="flex-row">
+                <div class="input-item"><label>鹽 (g)</label><input type="number" step="any" inputmode="decimal" id="salt" value="6" oninput="calculate()"></div>
+                <div class="input-item"><label>糖 (g)</label><input type="number" step="any" inputmode="decimal" id="sugar" value="30" oninput="calculate()"></div>
+                <div class="input-item" style="flex:1.5;"><label>拌入式餡料總重 (g)</label><input type="number" step="any" inputmode="decimal" id="intFillingTotal" value="0" oninput="calculate()"></div>
+            </div>
+        </div>
+
+        <div class="status-grid">
+            <div class="status-card"><div class="status-label">燒減率</div><div id="lossDisp" class="status-value">-- %</div></div>
+            <div class="status-card"><div class="status-label">難度/S&F</div><div id="sensory" class="status-value">--</div></div>
+            <div class="status-card"><div class="status-label">出缸溫度</div><div id="outTempDisp" class="status-value">-- °C</div></div>
+            <div class="status-card" style="grid-column: span 3; background:#e8f5e9; border-color:#a5d6a7;">
+                <div class="status-label" style="color:#2e7d32;">一發 (Bulk) 建議時間 <span class="badge" id="bulkDispBadge">-- 分</span></div>
+                <button class="timer-btn" id="timerBtn" onclick="startTimer()">⏱️ 開始一發計時</button>
+                <div class="timer-display" id="timerDisplay"></div>
+            </div>
+        </div>
+
+        <div class="result-box">
+            <div class="result-item"><span>需添加 **主麵粉**:</span><span id="resFlour" class="highlight">--</span></div>
+            <div class="result-item"><span>需添加 **純水**:</span><span id="resWater" class="highlight">--</span></div>
+            <div id="liquidWarn" class="warn"></div>
+            <hr style="border:0.5px solid #ffe0b2;">
+            <div class="result-item" style="font-size:0.9rem; font-weight:bold; color:#3e2723;">
+                <span>分割麵團 (含拌入): <span id="resSplit" style="color:var(--accent)">--</span> g</span>
+                <span>+ 包餡: <span id="resWrap" style="color:var(--accent)">--</span> g</span>
+            </div>
+            <div class="result-item" style="font-size:0.75rem; opacity:0.8;"><span>下缸總重 (麵團+糖): <span id="resTotal">--</span> g</span></div>
         </div>
     </div>
 
-    <div class="section">
-        <div class="section-title">烘焙方式與環境</div>
-        <div class="method-toggle">
-            <label><input type="radio" name="method" id="modeBake" value="bake" checked onclick="toggleMethod()"><span>烤 (Bake)</span></label>
-            <label><input type="radio" name="method" id="modeSteam" value="steam" onclick="toggleMethod()"><span>蒸 (Steam)</span></label>
+    <div id="tab-cost" class="tab-content">
+        <div class="section">
+            <div class="section-title">進貨成本與用量 (點擊直接輸入)</div>
+            <table class="cost-table">
+                <thead>
+                    <tr><th style="width:25%">材料</th><th>單價($)</th><th>包裝(g)</th><th style="width:20%">配方用量</th><th>小計</th><th></th></tr>
+                </thead>
+                <tbody id="costBody"></tbody>
+            </table>
+            <button class="add-row-btn" onclick="addCostRow()">+ 增加自訂材料</button>
         </div>
-        <div id="bakePanel" class="flex-row">
-            <div class="input-item"><label>環境氣溫 (°C)</label><input type="number" id="envTemp" value="26" oninput="calculate()"></div>
-            <div class="input-item"><label>溫度 (°C)</label><input type="number" id="temp" value="180" oninput="calculate()"></div>
-            <div class="input-item"><label>時間 (min)</label><input type="number" id="time" value="15" oninput="calculate()"></div>
-            <div class="input-item" style="flex:0.5; text-align:center;"><label>有蓋</label><input type="checkbox" id="lidded" onchange="calculate()" style="width:18px; height:18px;"></div>
-        </div>
-        <div id="steamPanel" style="display:none;" class="input-item">
-            <label>蒸煮時間 (min)</label><input type="number" id="steamTime" value="15" oninput="calculate()">
-        </div>
-    </div>
 
-    <div class="section" style="background: #f1f8e9;">
-        <div class="section-title">種麵與燙麵 (Pre-ferments & Roux)</div>
-        <div class="flex-row">
-            <div class="input-item"><label>魯邦種 1:1 (g)</label><input type="number" id="levain" value="0" oninput="calculate()"></div>
-            <div class="input-item"><label>Poolish/Biga (g)</label><input type="number" id="poolish" value="0" oninput="calculate()"></div>
-            <div class="input-item" style="flex:0.6;"><label>其含水 %</label><input type="number" id="poolishHydro" value="100" oninput="calculate()"></div>
+        <div class="result-box" style="background: #e1f5fe; border-color: #81d4fa;">
+            <div class="result-item"><span>批次總食材成本:</span><span id="totalBatchCost" class="highlight">--</span></div>
+            <div class="result-item"><span>單顆成品成本:</span><span id="singleCost" style="font-weight:bold;">--</span></div>
+            <hr>
+            <div class="result-item" style="color: var(--green); font-weight:bold;">
+                <span>建議售價 (食材佔 25-33%):</span>
+                <span id="suggestedPrice">--</span>
+            </div>
         </div>
-        <div class="flex-row" style="margin-top:5px;">
-            <div class="input-item"><label>老麵 (g)</label><input type="number" id="oldDough" value="0" oninput="calculate()"></div>
-            <div class="input-item" style="flex:0.6;"><label>其含水 %</label><input type="number" id="oldDoughHydro" value="65" oninput="calculate()"></div>
-        </div>
-        <hr style="border: 0.5px dashed #c5e1a5; margin: 10px 0;">
-        <div class="flex-row">
-            <div class="input-item" style="flex:1.2;"><label>下缸熟湯種重 (g)</label><input type="number" id="tangzhong" value="0" oninput="calculate()"></div>
-            <div class="input-item" style="flex:1;"><label>生料含水 %<br><small>(1:5 = 500%)</small></label><input type="number" id="tzHydro" value="500" oninput="calculate()"></div>
-            <div class="input-item" style="flex:1.5; font-size:0.7rem; color:#558b2f; align-self:center;" id="tzSuggestDisp">建議佔總粉5~10%</div>
-        </div>
-        <div id="tzRecipeDisp" class="recipe-hint"></div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">配方比例與拌入材料</div>
-        <div class="flex-row">
-            <div class="input-item"><label>總含水量 %</label><input type="number" id="hydro" value="65" oninput="calculate()"></div>
-            <div class="input-item"><label>牛奶 (g)</label><input type="number" id="milk" value="0" oninput="calculate()"></div>
-            <div class="input-item"><label>全蛋 (g)</label><input type="number" id="egg" value="0" oninput="calculate()"></div>
-            <div class="input-item"><label>油脂 (g)</label><input type="number" id="fat" value="0" oninput="calculate()"></div>
-        </div>
-        <div class="flex-row">
-            <div class="input-item"><label>鹽 (g)</label><input type="number" id="salt" value="6" oninput="calculate()"></div>
-            <div class="input-item"><label>糖 (g)</label><input type="number" id="sugar" value="30" oninput="calculate()"></div>
-            <div class="input-item" style="flex:1.5;"><label>拌入式餡料總重 (g)</label><input type="number" id="intFillingTotal" value="0" oninput="calculate()"></div>
-        </div>
-    </div>
-
-    <div class="status-grid">
-        <div class="status-card"><div class="status-label">燒減率</div><div id="lossDisp" class="status-value">-- %</div></div>
-        <div class="status-card"><div class="status-label">難度/S&F</div><div id="sensory" class="status-value">--</div></div>
-        <div class="status-card"><div class="status-label">出缸溫度</div><div id="outTempDisp" class="status-value">-- °C</div></div>
-        <div class="status-card" style="grid-column: span 3; background:#e8f5e9; border-color:#a5d6a7;">
-            <div class="status-label" style="color:#2e7d32;">一發 (Bulk) 建議時間 <span class="badge" id="bulkDispBadge">-- 分</span></div>
-            <button class="timer-btn" id="timerBtn" onclick="startTimer()">⏱️ 開始一發計時</button>
-            <div class="timer-display" id="timerDisplay"></div>
-        </div>
-    </div>
-
-    <div class="result-box">
-        <div class="result-item"><span>需添加 **麵粉**:</span><span id="resFlour" class="highlight">--</span></div>
-        <div class="result-item"><span>需添加 **純水**:</span><span id="resWater" class="highlight">--</span></div>
-        <div id="liquidWarn" class="warn"></div>
-        <hr style="border:0.5px solid #ffe0b2;">
-        <div class="result-item" style="font-size:0.9rem; font-weight:bold; color:#3e2723;">
-            <span>分割麵團 (含拌入): <span id="resSplit" style="color:var(--accent)">--</span> g</span>
-            <span>+ 包餡: <span id="resWrap" style="color:var(--accent)">--</span> g</span>
-        </div>
-        <div class="result-item" style="font-size:0.75rem; opacity:0.8;"><span>下缸總重 (麵團+糖): <span id="resTotal">--</span> g</span></div>
     </div>
 </div>
 
 <script>
+// --- 分頁與計時邏輯 ---
+function switchTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.querySelector(`.tab-btn[onclick="switchTab('${tab}')"]`).classList.add('active');
+    if(tab === 'cost') updateCostSheet();
+}
+
+let bulkMinutes = 0;
+let countdownInterval;
+function startTimer() {
+    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+        Notification.requestPermission();
+    }
+    if(bulkMinutes <= 0) return;
+    const targetTime = new Date().getTime() + bulkMinutes * 60000;
+    const targetTimeStr = new Date(targetTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    const display = document.getElementById('timerDisplay');
+    const btn = document.getElementById('timerBtn');
+    display.style.display = "block";
+    btn.innerText = "🔄 重新計時";
+    btn.style.background = "#ff9800";
+    clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => {
+        const now = new Date().getTime();
+        const distance = targetTime - now;
+        if (distance <= 0) {
+            clearInterval(countdownInterval);
+            display.innerText = "✅ 麵團一發已完成！";
+            display.style.color = "#2e7d32";
+            btn.innerText = "⏱️ 開始一發計時";
+            btn.style.background = "#4caf50";
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification("🍞 麵團發酵完成！", { body: `您設定的 ${bulkMinutes} 分鐘一發時間已到，可以準備分割囉。`, icon: "bread-icon.png" });
+            } else {
+                alert(`🍞 麵團發酵完成！設定的 ${bulkMinutes} 分鐘一發時間已到。`);
+            }
+            return;
+        }
+        const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((distance % (1000 * 60)) / 1000);
+        display.innerText = `⏳ 倒數 ${m}分 ${s}秒 (預計 ${targetTimeStr} 完成)`;
+        display.style.color = "#d84315";
+    }, 1000);
+}
+
+// --- 成本資料庫 ---
+let customIngredients = []; 
+const baseMaterials = [
+    { id: 'totalFlourCost', name: '所有麵粉總計', price: 150, pkg: 1000 },
+    { id: 'fat', name: '奶油/油脂', price: 220, pkg: 450 },
+    { id: 'sugar', name: '糖', price: 45, pkg: 1000 },
+    { id: 'salt', name: '鹽', price: 30, pkg: 1000 },
+    { id: 'milk', name: '牛奶', price: 95, pkg: 936 },
+    { id: 'egg', name: '雞蛋', price: 120, pkg: 600 }
+];
+
+// 儲存總麵粉量供成本頁讀取
+let globalTotalFlour = 0;
+
+// --- 核心計算 ---
 const presets = {
     baguette: { hydro: 72, poolish: 150, salt: 10, temp: 240, time: 25, mode: 'bake' },
     sourdough: { hydro: 80, levain: 100, salt: 10, temp: 240, time: 40, mode: 'bake', lidded: true },
@@ -184,8 +295,6 @@ function toggleMethod() {
     calculate();
 }
 
-let bulkMinutes = 0;
-
 function calculate() {
     const unitW = parseFloat(document.getElementById('unitWeight').value) || 0;
     const qty = parseFloat(document.getElementById('qty').value) || 0;
@@ -207,20 +316,18 @@ function calculate() {
     const od = parseFloat(document.getElementById('oldDough').value) || 0;
     const odH = parseFloat(document.getElementById('oldDoughHydro').value) / 100 || 0.65;
     
-    // 湯種精確計算
-    const tzCooked = parseFloat(document.getElementById('tangzhong').value) || 0; // 下缸的熟重
+    const tzCooked = parseFloat(document.getElementById('tangzhong').value) || 0; 
     const tzH = parseFloat(document.getElementById('tzHydro').value) / 100 || 5;
 
-    // 煮湯種生料配方 (假設 10% 水分蒸發)
     const tzRecipeEl = document.getElementById('tzRecipeDisp');
     let tzFlour = 0;
     let tzWaterContributed = 0;
 
     if (tzCooked > 0) {
-        const rawTzTotal = tzCooked / 0.9; // 反推生料總重
-        tzFlour = rawTzTotal / (1 + tzH);  // 麵粉不會蒸發，直接算作下缸的麵粉
+        const rawTzTotal = tzCooked / 0.9; 
+        tzFlour = rawTzTotal / (1 + tzH);  
         const rawTzWater = rawTzTotal - tzFlour; 
-        tzWaterContributed = tzCooked - tzFlour; // 實際帶進主麵團的水量 (熟重 - 麵粉重)
+        tzWaterContributed = tzCooked - tzFlour; 
         
         tzRecipeEl.innerHTML = `🍳 <b>煮湯種配方 (已計入10%蒸發耗損)：</b><br>準備 <b>麵粉 ${tzFlour.toFixed(1)}g + 水 ${rawTzWater.toFixed(1)}g</b> 煮沸，即可得到 ${tzCooked}g 熟湯種。`;
         tzRecipeEl.style.display = "block";
@@ -238,6 +345,9 @@ function calculate() {
     const fixedNonWater = salt + fat + intFilling + (milk * 0.1) + (egg * 0.25);
     const totalFlour = (rawBreadPartNeeded - fixedNonWater) / (1 + hydro);
     const totalWater = totalFlour * hydro;
+    
+    // 更新全域變數供成本計算使用 (包含所有種麵的麵粉)
+    globalTotalFlour = totalFlour;
 
     const tzRatio = (tzFlour / totalFlour * 100).toFixed(1);
     const tzSuggestEl = document.getElementById('tzSuggestDisp');
@@ -249,7 +359,6 @@ function calculate() {
         tzSuggestEl.style.color = "#558b2f";
     }
 
-    // 扣除預發酵種與湯種
     const resFlour = totalFlour - (lev*0.5) - (pol/(1+polH)) - (od/(1+odH)) - tzFlour;
     const resWater = totalWater - (lev*0.5) - (pol - pol/(1+polH)) - (od - od/(1+odH)) - tzWaterContributed - (milk*0.9) - (egg*0.75);
 
@@ -267,43 +376,87 @@ function calculate() {
     document.getElementById('bulkDispBadge').innerText = `${bulkMinutes} 分`;
     document.getElementById('sensory').innerText = (hydro > 0.75 ? "★★★★ / 3次" : "★★★ / 1-2次");
     document.getElementById('outTempDisp').innerText = (hydro > 0.72 ? "22-24" : "26-28");
+    
+    if(document.getElementById('tab-cost').classList.contains('active')) updateCostSheet();
 }
 
-let countdownInterval;
-function startTimer() {
-    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-        Notification.requestPermission();
-    }
-    if(bulkMinutes <= 0) return;
-    const targetTime = new Date().getTime() + bulkMinutes * 60000;
-    const targetTimeStr = new Date(targetTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    const display = document.getElementById('timerDisplay');
-    const btn = document.getElementById('timerBtn');
-    display.style.display = "block";
-    btn.innerText = "🔄 重新計時";
-    btn.style.background = "#ff9800";
-    clearInterval(countdownInterval);
-    countdownInterval = setInterval(() => {
-        const now = new Date().getTime();
-        const distance = targetTime - now;
-        if (distance <= 0) {
-            clearInterval(countdownInterval);
-            display.innerText = "✅ 麵團一發已完成！";
-            display.style.color = "#2e7d32";
-            btn.innerText = "⏱️ 開始一發計時";
-            btn.style.background = "#4caf50";
-            if ("Notification" in window && Notification.permission === "granted") {
-                new Notification("🍞 麵團發酵完成！", { body: `您設定的 ${bulkMinutes} 分鐘一發時間已到，可以準備分割囉。`, icon: "bread-icon.png" });
-            } else {
-                alert(`🍞 麵團發酵完成！設定的 ${bulkMinutes} 分鐘一發時間已到。`);
-            }
-            return;
+// --- 成本計算更新 ---
+function updateCostSheet() {
+    const body = document.getElementById('costBody');
+    body.innerHTML = '';
+    let totalCost = 0;
+    const qty = parseFloat(document.getElementById('qty').value) || 1;
+
+    baseMaterials.forEach(m => {
+        let usage = 0;
+        // 將所有麵粉（主麵粉+所有種麵）精確加總計入成本
+        if(m.id === 'totalFlourCost') {
+            usage = globalTotalFlour;
+        } else {
+            usage = parseFloat(document.getElementById(m.id).value) || 0;
         }
-        const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const s = Math.floor((distance % (1000 * 60)) / 1000);
-        display.innerText = `⏳ 倒數 ${m}分 ${s}秒 (預計 ${targetTimeStr} 完成)`;
-        display.style.color = "#d84315";
-    }, 1000);
+        
+        const rowCost = (m.price / m.pkg) * usage;
+        totalCost += rowCost;
+        
+        body.innerHTML += `
+            <tr>
+                <td>${m.name}</td>
+                <td><input type="number" step="any" inputmode="decimal" class="cost-input" value="${m.price}" oninput="updateMat('${m.id}', 'price', this.value)"></td>
+                <td><input type="number" step="any" inputmode="decimal" class="cost-input" value="${m.pkg}" oninput="updateMat('${m.id}', 'pkg', this.value)"></td>
+                <td>${usage.toFixed(1)} g</td>
+                <td>$${rowCost.toFixed(1)}</td>
+                <td></td>
+            </tr>`;
+    });
+
+    // 加入配方中填寫的包餡
+    const wrapPer = parseFloat(document.getElementById('wrapFillingPer').value) || 0;
+    const intFilling = parseFloat(document.getElementById('intFillingTotal').value) || 0;
+    const totalFillingUsage = (wrapPer * qty) + intFilling;
+    
+    if(totalFillingUsage > 0) {
+        // 預設尋找是否已經有自訂的餡料項目，若無則暫時不自動計入總價，讓使用者自己加
+        const hasFillingInCustom = customIngredients.some(c => c.name.includes('餡'));
+        if(!hasFillingInCustom) {
+            body.innerHTML += `<tr><td colspan="6" style="color:#d32f2f; font-size:0.75rem;">⚠️ 配方中含有 ${totalFillingUsage}g 餡料，請按下方按鈕新增成本。</td></tr>`;
+        }
+    }
+
+    customIngredients.forEach((m, i) => {
+        const rowCost = (m.price / m.pkg) * m.usage;
+        totalCost += rowCost;
+        body.innerHTML += `
+            <tr>
+                <td><input type="text" value="${m.name}" oninput="customIngredients[${i}].name=this.value" style="width:100%; padding:6px; border:1px solid #ddd; border-radius:4px;"></td>
+                <td><input type="number" step="any" inputmode="decimal" class="cost-input" value="${m.price}" oninput="customIngredients[${i}].price=parseFloat(this.value)||0;updateCostSheet()"></td>
+                <td><input type="number" step="any" inputmode="decimal" class="cost-input" value="${m.pkg}" oninput="customIngredients[${i}].pkg=parseFloat(this.value)||1;updateCostSheet()"></td>
+                <td><input type="number" step="any" inputmode="decimal" class="cost-input" value="${m.usage}" oninput="customIngredients[${i}].usage=parseFloat(this.value)||0;updateCostSheet()"></td>
+                <td>$${rowCost.toFixed(1)}</td>
+                <td><button class="remove-btn" onclick="customIngredients.splice(${i},1);updateCostSheet()">×</button></td>
+            </tr>`;
+    });
+
+    document.getElementById('totalBatchCost').innerText = `$ ${totalCost.toFixed(1)}`;
+    const single = totalCost / qty;
+    document.getElementById('singleCost').innerText = `$ ${single.toFixed(1)}`;
+    document.getElementById('suggestedPrice').innerText = `$ ${Math.round(single/0.33)} ~ $ ${Math.round(single/0.25)}`;
+}
+
+function updateMat(id, field, val) {
+    baseMaterials.find(m => m.id === id)[field] = parseFloat(val) || 0;
+    updateCostSheet();
+}
+
+function addCostRow() { 
+    // 自動帶入配方中的餡料總量作為預設值
+    const qty = parseFloat(document.getElementById('qty').value) || 1;
+    const wrapPer = parseFloat(document.getElementById('wrapFillingPer').value) || 0;
+    const intFilling = parseFloat(document.getElementById('intFillingTotal').value) || 0;
+    const totalFillingUsage = (wrapPer * qty) + intFilling;
+    
+    customIngredients.push({ name: '包餡/配料', price: 0, pkg: 1000, usage: totalFillingUsage }); 
+    updateCostSheet(); 
 }
 
 calculate();
